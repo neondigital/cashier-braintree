@@ -1,18 +1,20 @@
 <?php
 
-namespace Laravel\Cashier;
+namespace Neondigital\Cashier;
 
-use Exception;
-use Carbon\Carbon;
-use Illuminate\Support\Arr;
+use Braintree\Customer as BraintreeCustomer;
 use Braintree\PaymentMethod;
 use Braintree\PayPalAccount;
-use InvalidArgumentException;
-use Braintree\TransactionSearch;
-use Illuminate\Support\Collection;
-use Braintree\Customer as BraintreeCustomer;
-use Braintree\Transaction as BraintreeTransaction;
 use Braintree\Subscription as BraintreeSubscription;
+use Braintree\Transaction as BraintreeTransaction;
+use Braintree\TransactionSearch;
+use Carbon\Carbon;
+use Doctrine\Common\Collections\Criteria;
+use EntityManager;
+use Exception;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 trait Billable
@@ -165,7 +167,8 @@ trait Billable
      */
     public function subscriptions()
     {
-        return $this->hasMany(Subscription::class)->orderBy('created_at', 'desc');
+        $criteria = Criteria::create()->orderBy(array('createdAt' => Criteria::DESC));
+        return $this->getSubscriptions()->matching($criteria);
     }
 
     /**
@@ -295,11 +298,11 @@ trait Billable
 
         $paypalAccount = $response->paymentMethod instanceof PaypalAccount;
 
-        $this->forceFill([
-            'paypal_email' => $paypalAccount ? $response->paymentMethod->email : null,
-            'card_brand' => $paypalAccount ? null : $response->paymentMethod->cardType,
-            'card_last_four' => $paypalAccount ? null : $response->paymentMethod->last4,
-        ])->save();
+        $this->setPaypalEmail($paypalAccount ? $response->paymentMethod->email : null);
+        $this->setCardBrand($paypalAccount ? null : $response->paymentMethod->cardType);
+        $this->setCardLastFour($paypalAccount ? null : $response->paymentMethod->last4);
+
+        EntityManager::flush();
 
         $this->updateSubscriptionsToPaymentMethod(
             $response->paymentMethod->token
@@ -390,9 +393,9 @@ trait Billable
     {
         $response = BraintreeCustomer::create(
             array_replace_recursive([
-                'firstName' => Arr::get(explode(' ', $this->name), 0),
-                'lastName' => Arr::get(explode(' ', $this->name), 1),
-                'email' => $this->email,
+                'firstName' => Arr::get(explode(' ', $this->getName()), 0),
+                'lastName' => Arr::get(explode(' ', $this->getName()), 1),
+                'email' => $this->getEmail(),
                 'paymentMethodNonce' => $token,
                 'creditCard' => [
                     'options' => [
@@ -410,12 +413,11 @@ trait Billable
 
         $paypalAccount = $paymentMethod instanceof PayPalAccount;
 
-        $this->forceFill([
-            'braintree_id' => $response->customer->id,
-            'paypal_email' => $paypalAccount ? $paymentMethod->email : null,
-            'card_brand' => ! $paypalAccount ? $paymentMethod->cardType : null,
-            'card_last_four' => ! $paypalAccount ? $paymentMethod->last4 : null,
-        ])->save();
+        $this->setBraintreeId($response->customer->id);
+        $this->setPaypalEmail($paypalAccount ? $paymentMethod->email : null);
+        $this->setCardBrand(! $paypalAccount ? $paymentMethod->cardType : null);
+        $this->setCardLastFour(! $paypalAccount ? $paymentMethod->last4 : null);
+        EntityManager::flush();
 
         return $response->customer;
     }
@@ -437,7 +439,7 @@ trait Billable
      */
     public function asBraintreeCustomer()
     {
-        return BraintreeCustomer::find($this->braintree_id);
+        return BraintreeCustomer::find($this->getBraintreeId());
     }
 
     /**
@@ -447,6 +449,6 @@ trait Billable
      */
     public function hasBraintreeId()
     {
-        return ! is_null($this->braintree_id);
+        return ! is_null($this->getBraintreeId());
     }
 }

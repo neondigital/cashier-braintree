@@ -1,39 +1,151 @@
-# Laravel Cashier - Braintree Edition (Beta)
+# Laravel Doctrine Cashier
 
-[![Build Status](https://travis-ci.org/laravel/cashier-braintree.svg)](https://travis-ci.org/laravel/cashier-braintree)
-[![Total Downloads](https://poser.pugx.org/laravel/cashier-braintree/d/total.svg)](https://packagist.org/packages/laravel/cashier-braintree)
-[![Latest Stable Version](https://poser.pugx.org/laravel/cashier-braintree/v/stable.svg)](https://packagist.org/packages/laravel/cashier-braintree)
-[![Latest Unstable Version](https://poser.pugx.org/laravel/cashier-braintree/v/unstable.svg)](https://packagist.org/packages/laravel/cashier-braintree)
-[![License](https://poser.pugx.org/laravel/cashier-braintree/license.svg)](https://packagist.org/packages/laravel/cashier-braintree)
+This is a fork and adaptation of the (https://github.com/laravel/cashier)[Laravel Cashier] package for use with Doctrine.
 
 ## Introduction
 
-Laravel Cashier provides an expressive, fluent interface to [Braintree's](https://www.braintreepayments.com/) subscription billing services. It handles almost all of the boilerplate subscription billing code you are dreading writing. In addition to basic subscription management, Cashier can handle coupons, swapping subscription, cancellation grace periods, and even generate invoice PDFs.
+Add `Neondigital\Cashier\CashierServiceProvider::class` to your `config/app.php` file.
 
-## Test Setup
-You will need to set the following details locally and on your Braintree account in order to test. It's recommended that you sign-up for a [Braintree sandbox account](https://www.braintreepayments.com/sandbox).
+## Users
 
-### Local
-#### .env
-    BRAINTREE_MERCHANT_ID=
-    BRAINTREE_PUBLIC_KEY=
-    BRAINTREE_PRIVATE_KEY=
-    BRAINTREE_MODEL=User
+Your user entity should use the `Neondigital\Cashier\Billable` trait and have the following properties.
 
-### Braintree
-#### Plans
-    * Plan ID: monthly-10-1, Price: $10, Billing cycle of every month
-    * Plan ID: monthly-10-2, Price: $10, Billing cycle of every month
-    * Plan ID: yearly-100-1, Price: $100, Billing cycle of every 12 months
-#### Discount
-    * Discount ID: coupon-1, Price: $5
-    * Discount ID: plan-credit, Price $1
+```php
+<?php
 
+namespace App\Entities;
 
-## Official Documentation
+use Doctrine\ORM\Mapping as ORM;
+use Neondigital\Cashier\Billable;
 
-Documentation for Cashier can be found on the [Laravel website](http://laravel.com/docs/billing).
+/**
+ * @ORM\Entity
+ */
+class User
+{
+    use Billable;
 
-## License
+    /**
+     * @ORM\Id
+     * @ORM\GeneratedValue
+     * @ORM\Column(type="integer")
+     */
+    protected $id;
 
-Laravel Cashier is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT)
+        /**
+     * @ORM\Column(type="string",nullable=true)
+     */
+    protected $stripeId;
+    
+    /**
+     * @ORM\Column(type="string", nullable=true)
+     */
+    protected $cardBrand;
+    
+    /**
+     * @ORM\Column(type="string", nullable=true)
+     */
+    protected $cardLastFour;
+
+    /**
+     * @ORM\Column(type="datetime", nullable=true)
+     */
+    protected $trialEndsAt;
+
+    /**
+     * Gets the value of stripeId.
+     *
+     * @return mixed
+     */
+    public function getStripeId()
+    {
+        return $this->stripeId;
+    }
+
+    /**
+     * Sets the value of stripeId.
+     *
+     * @param mixed $stripeId the stripe id
+     *
+     * @return self
+     */
+    public function setStripeId($stripeId)
+    {
+        $this->stripeId = $stripeId;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of cardBrand.
+     *
+     * @return mixed
+     */
+    public function getCardBrand()
+    {
+        return $this->cardBrand;
+    }
+
+    /**
+     * Sets the value of cardBrand.
+     *
+     * @param mixed $cardBrand the card brand
+     *
+     * @return self
+     */
+    public function setCardBrand($cardBrand)
+    {
+        $this->cardBrand = $cardBrand;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of cardLastFour.
+     *
+     * @return mixed
+     */
+    public function getCardLastFour()
+    {
+        return $this->cardLastFour;
+    }
+
+    /**
+     * Sets the value of cardLastFour.
+     *
+     * @param mixed $cardLastFour the card last four
+     *
+     * @return self
+     */
+    public function setCardLastFour($cardLastFour)
+    {
+        $this->cardLastFour = $cardLastFour;
+
+        return $this;
+    }
+
+    /**
+     * Gets the value of trialEndsAt.
+     *
+     * @return mixed
+     */
+    public function getTrialEndsAt()
+    {
+        return $this->trialEndsAt;
+    }
+
+    /**
+     * Sets the value of trialEndsAt.
+     *
+     * @param mixed $trialEndsAt the trial ends at
+     *
+     * @return self
+     */
+    public function setTrialEndsAt($trialEndsAt)
+    {
+        $this->trialEndsAt = $trialEndsAt;
+
+        return $this;
+    }
+}
+```

@@ -1,12 +1,13 @@
 <?php
 
-namespace Laravel\Cashier;
+namespace Neondigital\Cashier;
 
 use Exception;
 use Carbon\Carbon;
 use Braintree\Plan as BraintreePlan;
 use Braintree\Discount as BraintreeDiscount;
 use Braintree\Subscription as BraintreeSubscription;
+use EntityManager;
 
 class SubscriptionBuilder
 {
@@ -148,14 +149,18 @@ class SubscriptionBuilder
             $trialEndsAt = $this->trialDays ? Carbon::now()->addDays($this->trialDays) : null;
         }
 
-        return $this->owner->subscriptions()->create([
-            'name' => $this->name,
-            'braintree_id'   => $response->subscription->id,
-            'braintree_plan' => $this->plan,
-            'quantity' => 1,
-            'trial_ends_at' => $trialEndsAt,
-            'ends_at' => null,
-        ]);
+        $sub = new \App\Entities\Subscription();
+        $sub->setName($this->name);
+        $sub->setBraintreeId($response->subscription->id);
+        $sub->setBraintreePlan($this->plan);
+        $sub->setQuantity(1);
+        $sub->setTrialEndsAt($trialEndsAt);
+        $sub->setEndsAt(null);
+
+        EntityManager::persist($sub);
+        EntityManager::flush();
+
+        return true;
     }
 
     /**
@@ -213,7 +218,7 @@ class SubscriptionBuilder
      */
     protected function getBraintreeCustomer($token = null, array $options = [])
     {
-        if (! $this->owner->braintree_id) {
+        if (! $this->owner->getBraintreeId()) {
             $customer = $this->owner->createAsBraintreeCustomer($token, $options);
         } else {
             $customer = $this->owner->asBraintreeCustomer();
