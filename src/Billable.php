@@ -136,12 +136,13 @@ trait Billable
             return false;
         }
 
+
         if (is_null($plan)) {
             return $subscription->valid();
         }
 
         return $subscription->valid() &&
-               $subscription->braintree_plan === $plan;
+               $subscription->getBraintreePlan() === $plan;
     }
 
     /**
@@ -152,12 +153,13 @@ trait Billable
      */
     public function subscription($subscription = 'default')
     {
-        return $this->subscriptions->sortByDesc(function ($value) {
-            return $value->created_at->getTimestamp();
-        })
-        ->first(function ($value) use ($subscription) {
-            return $value->name === $subscription;
-        });
+        $subscriptions = $this->subscriptions;
+        foreach ($subscriptions as $sub) {
+            if ($subscription && $subscription === $sub->getName()) {
+                return $sub;
+            }
+        }
+        return null;
     }
 
     /**
@@ -319,7 +321,7 @@ trait Billable
     {
         foreach ($this->subscriptions as $subscription) {
             if ($subscription->active()) {
-                BraintreeSubscription::update($subscription->braintree_id, [
+                BraintreeSubscription::update($subscription->getBraintreeId(), [
                     'paymentMethodToken' => $token,
                 ]);
             }

@@ -6,10 +6,9 @@ use Exception;
 use Carbon\Carbon;
 use LogicException;
 use InvalidArgumentException;
-use Illuminate\Database\Eloquent\Model;
 use Braintree\Subscription as BraintreeSubscription;
 
-class Subscription extends Model
+class Subscription
 {
     /**
      * The attributes that aren't mass assignable.
@@ -48,11 +47,7 @@ class Subscription extends Model
      */
     public function owner()
     {
-        $model = getenv('BRAINTREE_MODEL') ?: config('services.braintree.model', 'App\\User');
-
-        $model = new $model;
-
-        return $this->belongsTo(get_class($model), $model->getForeignKey());
+        return $this->getUser();
     }
 
     /**
@@ -72,7 +67,7 @@ class Subscription extends Model
      */
     public function active()
     {
-        return is_null($this->ends_at) || $this->onGracePeriod();
+        return is_null($this->getEndsAt()) || $this->onGracePeriod();
     }
 
     /**
@@ -92,8 +87,8 @@ class Subscription extends Model
      */
     public function onTrial()
     {
-        if (! is_null($this->trial_ends_at)) {
-            return Carbon::today()->lt($this->trial_ends_at);
+        if (! is_null($this->getTrialEndsAt())) {
+            return Carbon::today()->lt($this->getTrialEndsAt());
         } else {
             return false;
         }
@@ -106,7 +101,7 @@ class Subscription extends Model
      */
     public function onGracePeriod()
     {
-        if (! is_null($endsAt = $this->ends_at)) {
+        if (! is_null($endsAt = $this->getEndsAt())) {
             return Carbon::now()->lt(Carbon::instance($endsAt));
         } else {
             return false;
@@ -121,7 +116,7 @@ class Subscription extends Model
      */
     public function swap($plan)
     {
-        if ($this->onGracePeriod() && $this->braintree_plan === $plan) {
+        if ($this->onGracePeriod() && $this->getBraintreePlan() === $plan) {
             return $this->resume();
         }
 
