@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use LogicException;
 use InvalidArgumentException;
 use Braintree\Subscription as BraintreeSubscription;
+use EntityManager;
 
 class Subscription
 {
@@ -316,9 +317,9 @@ class Subscription
                 'numberOfBillingCycles' => $subscription->currentBillingCycle,
             ]);
 
-            $this->ends_at = $subscription->billingPeriodEndDate;
-
-            $this->save();
+            $this->setEndsAt($subscription->billingPeriodEndDate);
+            
+            EntityManager::flush();
         }
 
 

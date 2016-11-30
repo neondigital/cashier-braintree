@@ -156,6 +156,7 @@ trait Billable
         $subscriptions = $this->subscriptions;
         foreach ($subscriptions as $sub) {
             if ($subscription && $subscription === $sub->getName()) {
+                $sub->setDetails(\Braintree_Subscription::find($sub->getBraintreeId()));
                 return $sub;
             }
         }
