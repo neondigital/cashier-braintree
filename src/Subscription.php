@@ -349,7 +349,8 @@ class Subscription
      */
     public function markAsCancelled()
     {
-        $this->fill(['ends_at' => Carbon::now()])->save();
+        $this->setEndsAt(Carbon::now());
+        EntityManager::flush();
     }
 
     /**
@@ -372,7 +373,8 @@ class Subscription
             'numberOfBillingCycles' => null,
         ]);
 
-        $this->fill(['ends_at' => null])->save();
+        $this->setEndsAt(null);
+        EntityManager::flush();
 
         return $this;
     }
@@ -396,6 +398,6 @@ class Subscription
      */
     public function asBraintreeSubscription()
     {
-        return BraintreeSubscription::find($this->braintree_id);
+        return BraintreeSubscription::find($this->getBraintreeId());
     }
 }
