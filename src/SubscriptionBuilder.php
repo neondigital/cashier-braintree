@@ -156,13 +156,14 @@ class SubscriptionBuilder
         $sub->setQuantity(1);
         $sub->setTrialEndsAt($trialEndsAt);
         $sub->setEndsAt(null);
+        $sub->setUser($this->owner);
 
-        EntityManager::persist($sub);
-        EntityManager::flush();
+        // EntityManager::persist($sub);
+        // EntityManager::flush();
 
-        return true;
     }
 
+        return true;
     /**
      * Get the base subscription payload for Braintree.
      *
