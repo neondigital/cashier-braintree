@@ -1,12 +1,14 @@
 <?php
 
-namespace Laravel\Cashier\Http\Controllers;
+namespace Neondigital\Cashier\Http\Controllers;
 
 use Exception;
+use EntityManager;
 use Illuminate\Http\Request;
-use Laravel\Cashier\Subscription;
+use App\Entities\Subscription;
 use Illuminate\Routing\Controller;
 use Braintree\WebhookNotification;
+use App\Services\HomingpinService;
 use Symfony\Component\HttpFoundation\Response;
 
 class WebhookController extends Controller
@@ -43,6 +45,20 @@ class WebhookController extends Controller
     protected function parseBraintreeNotification($request)
     {
         return WebhookNotification::parse($request->bt_signature, $request->bt_payload);
+    }
+
+    protected function handleSubscriptionChargedSuccessfully($webhook)
+    {
+        $subscription = $this->getSubscriptionById($webhook->subscription->id);
+        $user = $subscription->getUser();
+
+        // Update the users HomingPINs
+        (new HomingpinService)->refreshHomingPinsForUser(
+            $user,
+            $webhook->subscription->nextBillingDate
+        );
+
+        return new Response('Webhook Handled', 200);
     }
 
     /**
@@ -92,7 +108,8 @@ class WebhookController extends Controller
      */
     protected function getSubscriptionById($subscriptionId)
     {
-        return Subscription::where('braintree_id', $subscriptionId)->first();
+        $repo = EntityManager::getRepository(Subscription::class);
+        return $repo->getByBraintreeId($subscriptionId);
     }
 
     /**
