@@ -153,7 +153,7 @@ trait Billable
      */
     public function subscription($subscription = 'default')
     {
-        $subscriptions = $this->subscriptions;
+        $subscriptions = $this->subscriptions();
         foreach ($subscriptions as $sub) {
             if ($subscription && $subscription === $sub->getName()) {
                 $sub->setDetails(\Braintree_Subscription::find($sub->getBraintreeId()));
