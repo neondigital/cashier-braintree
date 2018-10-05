@@ -185,7 +185,7 @@ trait Billable
         try {
             $invoice = BraintreeTransaction::find($id);
 
-            if ($invoice->customerDetails->id != $this->braintree_id) {
+            if ($invoice->customerDetails->id != $this->getBraintreeId()) {
                 return;
             }
 
